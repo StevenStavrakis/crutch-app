@@ -6,7 +6,6 @@
 	import { Navigation, Type } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import type { GeoJSON } from '$lib/types';
 	import { putFeatures } from '$lib/api/putFeatures';
 	import { FeatureType } from '$lib/types';
 
