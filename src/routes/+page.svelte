@@ -6,26 +6,75 @@
 	import { Navigation } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import type { MapMouseEvent, MapboxEvent } from 'mapbox-gl';
+	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
 
-	let points: mapboxgl.LngLat[] = $state([]);
 	let isDragging = $state(false);
 	let draggedPointId: number | null = $state(null);
+	let startMarker: mapboxgl.Marker | null = $state(null);
+	let endMarker: mapboxgl.Marker | null = $state(null);
+	let selectedMarker: 0 | 1 = $state(0);
+	let selectedMarkerRef = $derived.by(() => {
+		if (selectedMarker === 0) {
+			return startMarker;
+		} else {
+			return endMarker;
+		}
+	});
+
+	const recalculateRoute = () => {
+		if (!startMarker || !endMarker) return;
+		const start = startMarker.getLngLat();
+		const end = endMarker.getLngLat();
+		getDirections(`${start.lng},${start.lat}`, `${end.lng},${end.lat}`).then(
+			(res) => (directions = res)
+		);
+	};
 
 	const addNewMarker = (event: MapMouseEvent) => {
-		if (!map) return;
+		if (!map || map === undefined) return;
+		if (startMarker && endMarker) {
+			// careful
+			selectedMarkerRef!.setLngLat(event.lngLat);
+			recalculateRoute();
+			return;
+		}
 		const marker = new mapboxgl.Marker({
 			draggable: true // Make the marker draggable
-		})
-			.setLngLat(event.lngLat) // Set the marker's longitude and latitude
-			.addTo(map);
-		console.log(marker);
-		console.log('added');
+		}).setLngLat(event.lngLat); // Set the marker's longitude and latitude
+
+		if (!startMarker) {
+			startMarker = marker;
+			selectedMarker = 0;
+			marker.getElement().addEventListener('click', (e) => {
+				e.stopPropagation();
+				endMarker?.getElement().querySelector('path')?.setAttribute('fill', 'lightblue');
+				marker.getElement().querySelector('path')?.setAttribute('fill', 'red');
+				selectedMarker = 0;
+			});
+		} else {
+			endMarker = marker;
+			selectedMarker = 1;
+			marker.getElement().addEventListener('click', (e) => {
+				e.stopPropagation();
+				startMarker?.getElement().querySelector('path')?.setAttribute('fill', 'lightblue');
+				marker.getElement().querySelector('path')?.setAttribute('fill', 'red');
+				selectedMarker = 1;
+			});
+			recalculateRoute();
+		}
+		marker.addTo(map);
+		marker.on('dragstart', (e) => {
+			isDragging = true;
+		});
+		marker.on('dragend', () => {
+			isDragging = false;
+			recalculateRoute();
+		});
 	};
 
 	$effect(() => {
@@ -53,6 +102,7 @@
 					showUserHeading: true
 				})
 			);
+
 			map.on('click', (event: MapMouseEvent) => {
 				addNewMarker(event);
 			});
@@ -64,29 +114,27 @@
 		if (!map) return;
 		if (directions) {
 			console.log(directions);
-			/*
 			if (map.getSource('route')) {
-				map.getSource('route').setData(directions);
+				(map.getSource('route') as GeoJSONSource).setData(directions);
+			} else {
+				map.addLayer({
+					id: 'route',
+					type: 'line',
+					source: {
+						type: 'geojson',
+						data: directions
+					},
+					layout: {
+						'line-join': 'round',
+						'line-cap': 'round'
+					},
+					paint: {
+						'line-color': '#3887be',
+						'line-width': 5,
+						'line-opacity': 0.75
+					}
+				});
 			}
-			*/
-			// otherwise, we'll make a new request
-			map.addLayer({
-				id: 'route',
-				type: 'line',
-				source: {
-					type: 'geojson',
-					data: directions
-				},
-				layout: {
-					'line-join': 'round',
-					'line-cap': 'round'
-				},
-				paint: {
-					'line-color': '#3887be',
-					'line-width': 5,
-					'line-opacity': 0.75
-				}
-			});
 		}
 		untrack(() => {
 			directions = null;
