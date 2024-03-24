@@ -10,9 +10,7 @@
 	import { FeatureType } from '$lib/types';
 	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
-	import { Label } from '$lib/components/ui/label';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { is } from 'drizzle-orm';
 	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
 	import { Separator } from '$lib/components/ui/separator';
   let { data } = $props();
@@ -24,9 +22,9 @@
 	const point:[number, number] = [-78.5294792, 38.0404501];
 
 	let submitFeatures = (coord:[number, number], type:FeatureType) => {
-		if (type === FeatureType.AccesibleEnt) {
+		if (type === FeatureType.ENTRACE) {
 			putFeatures("Point", coord, type, 1)
-		} else if (type === FeatureType.Roadblock || type === FeatureType.Stairs) {
+		} else if (type === FeatureType.ROADBLOCK || type === FeatureType.STAIRS) {
 			putFeatures("Point", coord, type, -1)
 		}
 	}
@@ -185,7 +183,7 @@
 			<Button onclick={() => (open = true)}>open thing</Button>
 			<h1 class="text-4xl font-bold">Crutch</h1>
 
-			<Button onclick={() => submitFeatures(point, FeatureType.AccesibleEnt)}>Example of how submitFeatures work</Button>
+			<Button onclick={() => submitFeatures(point, FeatureType.ENTRACE)}>Example of how submitFeatures work</Button>
 
 			<div class="flex gap-4">
 				<form method="POST" action="?/search">
