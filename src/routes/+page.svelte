@@ -105,15 +105,15 @@
 
 		marker.on('dragend', () => {
 			isDragging = false;
-			if (selectedMarker === 0 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(endMarker!.getLngLat())){
-				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
-			} else {
+			if (selectedMarker === 0 && compareAndSetPoint(marker.getLngLat()) === compareAndSetPoint(endMarker!.getLngLat())){
 				marker.setLngLat(lastLngLatBeforeDrag);
+			} else {
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));				
 			};
-			if (selectedMarker === 1 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(startMarker!.getLngLat())){
-				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
-			} else {
+			if (selectedMarker === 1 && compareAndSetPoint(marker.getLngLat()) === compareAndSetPoint(startMarker!.getLngLat())){
 				marker.setLngLat(lastLngLatBeforeDrag);
+			} else {
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
 			};
 			recalculateRoute();
 		});
