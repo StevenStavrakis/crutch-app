@@ -8,6 +8,10 @@
 	import { getDirections } from '$lib/api/getDirections';
 	import type { GeoJSON } from '$lib/types';
 
+	let { features } = $props();
+
+	$inspect(features);
+
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
