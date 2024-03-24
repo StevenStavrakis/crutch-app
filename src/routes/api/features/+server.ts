@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 const DATASET_ID = "clu4lsehn8u3k1tp9g91gaxie"
 
 export const PUT: RequestHandler = async (event) => {
-    const { geometryType, geometryCoordinates, featureDesc, featureValue } = await event.request.json();
+    const { geometryType, geometryCoordinates, type, accessLevel } = await event.request.json();
     const id = crypto.randomUUID();
         
     try {
@@ -15,7 +15,7 @@ export const PUT: RequestHandler = async (event) => {
             feature: {
                 geometry: { coordinates: geometryCoordinates, type: geometryType },
                 id: id,
-                properties: { feature_desc: featureDesc, feature_value: featureValue },
+                properties: { type: type, accessLevel: accessLevel },
                 type: "Feature"
             }
         }).send();

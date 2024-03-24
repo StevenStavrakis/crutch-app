@@ -40,7 +40,7 @@ export const putFeatures = async(
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ geometryType, geometryCoordinates, featureDesc: type, featureValue: accessLevel })
+            body: JSON.stringify({ geometryType, geometryCoordinates, type, accessLevel })
         });
     
         console.log(request)
