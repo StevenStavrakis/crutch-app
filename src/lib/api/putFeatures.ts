@@ -29,7 +29,7 @@ export const putFeatures = async (
         if (!type) {
             throw new Error("At least one type must be given")
         }
-        if (!accessLevel) {
+        if (accessLevel === undefined || accessLevel === null) {
             throw new Error("accessLevel must be given")
         }
         if (accessLevel !== -1 && accessLevel !== 0 && accessLevel !== 1) {

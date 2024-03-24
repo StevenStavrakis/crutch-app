@@ -97,6 +97,7 @@ export const actions = {
                     message: 'Accessibility is required'
                 });
             }
+            console.log(accessLevel)
             try {
                 await putFeatures("Point", coordinatesValue, featureEnum, accessLevel, fetch)
                 return {
