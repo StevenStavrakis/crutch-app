@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { mapboxgl } from '$lib/map';
-	import * as Resizable from '$lib/components/ui/resizable';
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
@@ -54,7 +53,6 @@
 	};
 
 	const addNewMarker = (event: MapMouseEvent) => {
-		console.log(isMobile, modeSetting);
 		if (isMobile && modeSetting === 'upload') {
 			if (endMarker) {
 				endMarker.remove();
@@ -65,15 +63,29 @@
 			startMarker.addTo(map);
 			selectedMarker = 0;
 			currentCoordsSet = event.lngLat;
-			console.log(selectedMarkerRef);
 			open = true;
+			return;
+		}
+		if (!isMobile && modeSetting === 'upload') {
+			if (endMarker) {
+				endMarker.remove();
+				endMarker = null;
+			}
+			startMarker?.remove();
+			startMarker = new mapboxgl.Marker({
+				draggable: true
+			}).setLngLat(event.lngLat);
+			startMarker.addTo(map);
+			selectedMarker = 0;
+			currentCoordsSet = event.lngLat;
 			return;
 		}
 		if (isMobile && modeSetting === 'navigate') {
 			console.log('isMobile add marker');
 			// set start marker to current user geo location
 
-			startMarker = new mapboxgl.Marker().setLngLat(currentPosition);
+			startMarker?.remove();
+			startMarker = new mapboxgl.Marker().setLngLat(compareAndSetPoint(currentPosition));
 			if (!endMarker) {
 				console.log('make end marker');
 				selectedMarker = 1;
@@ -221,7 +233,7 @@
 								1,
 								'green',
 								0,
-								'yellow',
+								'orange',
 								-1,
 								'red',
 								'white'
@@ -352,7 +364,7 @@
 	};
 
 	let openMenu = $state(false);
-	let modeSetting = $state('navigate');
+	let modeSetting = $state('upload');
 	$effect(() => {
 		if (isMobile) {
 			if (modeSetting === 'upload') {
@@ -386,7 +398,7 @@
 <div class="flex flex-col md:flex-row">
 	<div class="hidden h-full w-fit p-4 md:block">
 		<h1 class="mb-6 hidden text-4xl font-bold md:block">Crutch</h1>
-		<Tabs.Root value="navigate" class="w-[400px]">
+		<Tabs.Root bind:value={modeSetting} class="w-[400px]">
 			<Tabs.List class="grid w-full grid-cols-2">
 				<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
 				<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
@@ -427,7 +439,7 @@
 	</div>
 	<div class="h-screen w-full p-4">
 		<div class="h-full w-full rounded-xl" id="map"></div>
-		<div class="absolute bottom-8 rounded-lg left-8 z-40 bg-black p-3 border md:hidden">
+		<div class="absolute bottom-8 left-8 z-40 rounded-lg border bg-black p-3 md:hidden">
 			<span>Mode: </span>
 			{#if modeSetting === 'navigate'}
 				<span>Navigate</span>
@@ -446,14 +458,14 @@
 				<Menu class="pointer-events-none" size={32} />
 			</Button>
 			<Dialog.Root bind:open={openMenu}>
-				<Dialog.Content>
+				<Dialog.Content class="max-w-[95vw]">
 					<Dialog.Header>
 						<Dialog.Title>Settings</Dialog.Title>
 						<Dialog.Description>
 							Choose between navigating or uploading a new feature to the map.
 						</Dialog.Description>
 					</Dialog.Header>
-					<Tabs.Root class="w-[400px]" bind:value={modeSetting}>
+					<Tabs.Root class="w-full" bind:value={modeSetting}>
 						<Tabs.List class="grid w-full grid-cols-2">
 							<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
 							<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
