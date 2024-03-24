@@ -1,0 +1,155 @@
+## Dependencies
+
+### @libsql/client
+A client library for interacting with LibSQL databases.
+- [pnpm link](https://pnpm.io/package/@libsql/client)
+
+### @mapbox/mapbox-sdk
+The official Mapbox SDK for interacting with Mapbox APIs.
+- [pnpm link](https://pnpm.io/package/@mapbox/mapbox-sdk)
+
+### bits-ui
+A UI component library for building interfaces.
+- [pnpm link](https://pnpm.io/package/bits-ui)
+
+### clsx
+A tiny utility for constructing className strings conditionally.
+- [pnpm link](https://pnpm.io/package/clsx)
+
+### drizzle-orm
+An ORM for simplifying database interactions.
+- [pnpm link](https://pnpm.io/package/drizzle-orm)
+
+### lucide-svelte
+Svelte components for the Lucide icon library.
+- [pnpm link](https://pnpm.io/package/lucide-svelte)
+
+### mapbox-gl
+A JavaScript library for interactive, customizable maps.
+- [pnpm link](https://pnpm.io/package/mapbox-gl)
+
+### mode-watcher
+A utility for watching and responding to changes in application mode.
+- [pnpm link](https://pnpm.io/package/mode-watcher)
+
+### paneforge
+A tool for creating and managing layout panes.
+- [pnpm link](https://pnpm.io/package/paneforge)
+
+### svelte-sonner
+A Svelte library for creating notifications.
+- [pnpm link](https://pnpm.io/package/svelte-sonner)
+
+### tailwind-merge
+A utility for merging Tailwind CSS classes.
+- [pnpm link](https://pnpm.io/package/tailwind-merge)
+
+### tailwind-variants
+A plugin for creating custom variants in Tailwind CSS.
+- [pnpm link](https://pnpm.io/package/tailwind-variants)
+
+### vaul-svelte
+A Svelte library for managing state and storage.
+- [pnpm link](https://pnpm.io/package/vaul-svelte)
+
+## DevDependencies
+
+### @sveltejs/adapter-auto
+An adapter for SvelteKit apps that automatically detects the environment.
+- [pnpm link](https://pnpm.io/package/@sveltejs/adapter-auto)
+
+### @sveltejs/kit
+A framework for building web applications with Svelte.
+- [pnpm link](https://pnpm.io/package/@sveltejs/kit)
+
+### @sveltejs/vite-plugin-svelte
+A plugin for integrating Svelte with Vite.
+- [pnpm link](https://pnpm.io/package/@sveltejs/vite-plugin-svelte)
+
+### @types/eslint
+TypeScript definitions for ESLint.
+- [pnpm link](https://pnpm.io/package/@types/eslint)
+
+### @types/mapbox-gl
+TypeScript definitions for mapbox-gl.
+- [pnpm link](https://pnpm.io/package/@types/mapbox-gl)
+
+### @types/mapbox__mapbox-sdk
+TypeScript definitions for @mapbox/mapbox-sdk.
+- [pnpm link](https://pnpm.io/package/@types/mapbox__mapbox-sdk)
+
+### @typescript-eslint/eslint-plugin
+An ESLint plugin that contains linting rules for TypeScript code.
+- [pnpm link](https://pnpm.io/package/@typescript-eslint/eslint-plugin)
+
+### @typescript-eslint/parser
+An ESLint parser that allows for the linting of TypeScript files.
+- [pnpm link](https://pnpm.io/package/@typescript-eslint/parser)
+
+### autoprefixer
+A PostCSS plugin to parse CSS and add vendor prefixes to CSS rules.
+- [pnpm link](https://pnpm.io/package/autoprefixer)
+
+### drizzle-kit
+A toolkit for building web applications.
+- [pnpm link](https://pnpm.io/package/drizzle-kit)
+
+### eslint
+A tool for identifying and reporting on patterns found in ECMAScript/JavaScript code.
+- [pnpm link](https://pnpm.io/package/eslint)
+
+### eslint-config-prettier
+Turns off all rules that are unnecessary or might conflict with Prettier.
+- [pnpm link](https://pnpm.io/package/eslint-config-prettier)
+
+### eslint-plugin-svelte
+An ESLint plugin for Svelte components.
+- [pnpm link](https://pnpm.io/package/eslint-plugin-svelte)
+
+### postcss
+A tool for transforming CSS with JavaScript.
+- [pnpm link](https://pnpm.io/package/postcss)
+
+### postcss-load-config
+A PostCSS plugin to load configuration options.
+- [pnpm link](https://pnpm.io/package/postcss-load-config)
+
+### prettier
+An opinionated code formatter.
+- [pnpm link](https://pnpm.io/package/prettier)
+
+### prettier-plugin-svelte
+A Prettier plugin for formatting Svelte components.
+- [pnpm link](https://pnpm.io/package/prettier-plugin-svelte)
+
+### prettier-plugin-tailwindcss
+A Prettier plugin for formatting Tailwind CSS.
+- [pnpm link](https://pnpm.io/package/prettier-plugin-tailwindcss)
+
+### svelte
+A compiler for creating fast web apps.
+- [pnpm link](https://pnpm.io/package/svelte)
+
+### svelte-check
+A tool for static analysis of Svelte components.
+- [pnpm link](https://pnpm.io/package/svelte-check)
+
+### tailwindcss
+A utility-first CSS framework for rapidly building custom designs.
+- [pnpm link](https://pnpm.io/package/tailwindcss)
+
+### tslib
+A runtime library for TypeScript that includes helper functions.
+- [pnpm link](https://pnpm.io/package/tslib)
+
+### typescript
+A superset of JavaScript that compiles to clean JavaScript output.
+- [pnpm link](https://pnpm.io/package/typescript)
+
+### vite
+A build tool that aims to provide a faster and leaner development experience for modern web projects.
+- [pnpm link](https://pnpm.io/package/vite)
+
+### Perplexity.ai
+An AI-powered research and conversational search engine that provides answers to queries using natural language predictive text. This document was built through Perplexity.ai Pro!
+- [link](https://www.perplexity.ai/)
