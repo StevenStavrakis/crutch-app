@@ -11,7 +11,7 @@ export type GeoJSON = {
 
 export enum FeatureType {
     ROADBLOCK = 'roadblock',
-    ENTRACE = 'entrance',
+    ENTRANCE = 'entrance',
     STAIRS = 'stairs',
     RAMP = 'ramp',
     ELEVATOR = 'elevator',
