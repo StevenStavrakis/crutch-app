@@ -149,8 +149,8 @@
 						canvas.width = svgImage.width;
 						canvas.height = svgImage.height;
 						const ctx = canvas.getContext('2d');
-						ctx.drawImage(svgImage, 0, 0);
-						const imageData = ctx.getImageData(0, 0, svgImage.width, svgImage.height);
+						ctx!.drawImage(svgImage, 0, 0);
+						const imageData = ctx!.getImageData(0, 0, svgImage.width, svgImage.height);
 
 						map!.addImage(svg.id, {
 							width: svgImage.width,
