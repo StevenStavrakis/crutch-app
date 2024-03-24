@@ -17,6 +17,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Label } from '$lib/components/ui/label';
 	import { toast } from 'svelte-sonner';
+	import { calcDistance } from '$lib/utils.js';
 	let { data, form } = $props();
 	$effect(() => {
 		if (!form) return;
@@ -218,18 +219,18 @@
 		let minDist = 1000;
 		let coord = [0, 0];
 
-		for (const {geometry, properties} of features) {
+		for (const {id, geometry, properties} of data.features) {
 			let { type, value } = properties;
 			if (type === "entrance" && value === 1) {
 				let { coordinates } = geometry;
 				let currDist = calcDistance(coordinates, [myPos.lng, myPos.lat]);
 				if (currDist < minDist) {
-					currDist = minDist
+					console.log(currDist)
+					minDist = currDist
 					coord = coordinates
 				}
 			}
 		}
-
 		return coord;
 	}
 
