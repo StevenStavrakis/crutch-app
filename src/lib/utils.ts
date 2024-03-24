@@ -60,3 +60,47 @@ export const flyAndScale = (
         easing: cubicOut
     };
 };
+
+export function addCircleBackground(svgString: string, backgroundColor: string, strokeColor: string, padding: number): string {
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+    const svgElement = svgDoc.documentElement;
+
+    const viewBox = svgElement.getAttribute('viewBox');
+    const [, , width, height] = viewBox ? viewBox.split(' ') : [0, 0, svgElement.getAttribute('width'), svgElement.getAttribute('height')];
+
+    const widthNum = Number(width);
+    const heightNum = Number(height);
+    const size = Math.max(widthNum, heightNum) + padding * 2;
+
+    const circleElement = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circleElement.setAttribute('cx', String(size / 2));
+    circleElement.setAttribute('cy', String(size / 2));
+    circleElement.setAttribute('r', String((size / 2) - 2)); // Adjust the radius to account for padding
+    circleElement.setAttribute('fill', backgroundColor);
+    circleElement.setAttribute('stroke', strokeColor);
+    circleElement.setAttribute('stroke-width', '2');
+
+    const groupElement = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+    groupElement.setAttribute('transform', `translate(${padding}, ${padding})`); // Adjust the translation to account for padding
+
+    while (svgElement.firstChild) {
+        groupElement.appendChild(svgElement.firstChild);
+    }
+
+    const pathElements = groupElement.getElementsByTagName('path');
+    for (let i = 0; i < pathElements.length; i++) {
+        pathElements[i].setAttribute('fill', 'none'); // Remove the fill attribute
+        pathElements[i].setAttribute('stroke', strokeColor);
+    }
+
+
+    const newSvgElement = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    newSvgElement.setAttribute('width', String(size));
+    newSvgElement.setAttribute('height', String(size));
+    newSvgElement.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    newSvgElement.appendChild(circleElement);
+    newSvgElement.appendChild(groupElement);
+
+    return new XMLSerializer().serializeToString(newSvgElement);
+}
