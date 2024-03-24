@@ -96,19 +96,27 @@
 			recalculateRoute();
 		}
 		marker.addTo(map);
+
+		let lastLngLatBeforeDrag: mapboxgl.LngLatLike;
+		
 		marker.on('dragstart', (e) => {
-			isDragging = true;
+			isDragging = true; 
+			lastLngLatBeforeDrag = marker.getLngLat();
 		});
+
 		marker.on('dragend', () => {
 			isDragging = false;
 			if (selectedMarker === 0 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(endMarker!.getLngLat())){
 				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
-				recalculateRoute();
+			} else {
+				marker.setLngLat(lastLngLatBeforeDrag);
 			};
 			if (selectedMarker === 1 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(startMarker!.getLngLat())){
 				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
-				recalculateRoute();
+			} else {
+				marker.setLngLat(lastLngLatBeforeDrag);
 			};
+			recalculateRoute();
 		});
 	};
 	$effect(() => {
@@ -214,12 +222,11 @@
 		let coord = [0, 0];
 
 		for (const {id, geometry, properties} of data.features) {
-			let { type, value } = properties;
-			if (type === "entrance" && value === 1) {
+			let { type, accessLevel } = properties;
+			if (type === "entrance" && accessLevel === 1) {
 				let { coordinates } = geometry;
 				let currDist = calcDistance(coordinates, [myPos.lng, myPos.lat]);
 				if (currDist < minDist) {
-					console.log(currDist)
 					minDist = currDist
 					coord = coordinates
 				}
