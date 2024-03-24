@@ -364,7 +364,7 @@
 	};
 
 	let openMenu = $state(false);
-	let modeSetting = $state('navigate');
+	let modeSetting = $state('upload');
 	$effect(() => {
 		if (isMobile) {
 			if (modeSetting === 'upload') {
