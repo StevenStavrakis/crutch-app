@@ -108,4 +108,3 @@ export function addCircleBackground(svgString: string, backgroundColor: string, 
 
     return new XMLSerializer().serializeToString(newSvgElement);
 }
-};
