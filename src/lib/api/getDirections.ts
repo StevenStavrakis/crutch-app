@@ -4,9 +4,7 @@
 // strings cannot be the same
 // strings cannot have spaces
 export const getDirections = async (from: string, to: string) => {
-    console.log("getDirections")
     try {
-        console.log("trying")
         if (!from || !to) {
             throw new Error("Both 'from' and 'to' are required");
         }
@@ -34,7 +32,6 @@ export const getDirections = async (from: string, to: string) => {
                 coordinates: route
             }
         };
-        console.log(geojson)
         return geojson;
     } catch (error) {
         console.log(error);

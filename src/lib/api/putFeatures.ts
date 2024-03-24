@@ -11,12 +11,13 @@ import { FeatureType } from "$lib/types"
  * properties.feature_value : -1 for negative features, +1 for positive features, 0 for neutral.
  */
 
-export const putFeatures = async(
+export const putFeatures = async (
     geometryType: string,
     geometryCoordinates: [number, number][] | [number, number],
     type: FeatureType,
-    accessLevel: number) => {
- 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    accessLevel: number, fetch: any) => {
+
     try {
         console.log("putting feature")
         if (geometryType !== "Point" && geometryType !== "LineString") {
@@ -34,18 +35,23 @@ export const putFeatures = async(
         if (accessLevel !== -1 && accessLevel !== 0 && accessLevel !== 1) {
             throw new Error("accessLevel must be -1, 0, or 1")
         }
-    
-        const request = await fetch("/api/features", {
+        if (!fetch) {
+            fetch = window.fetch
+        }
+
+        const response = await fetch("/api/features", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ geometryType, geometryCoordinates, type, accessLevel })
         });
-    
-        console.log(request)
-        return true;
-         
+        const res = await response.json();
+        res.status = response.status;
+        return {
+            status: res.status,
+        };
+
     } catch (error) {
         console.log(error);
         return null;
