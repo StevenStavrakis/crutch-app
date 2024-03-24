@@ -2,8 +2,6 @@
 	import { mapboxgl } from '$lib/map';
 	import * as Resizable from '$lib/components/ui/resizable';
 	import { untrack } from 'svelte';
-	import { Input } from '$lib/components/ui/input';
-	import { Navigation, Type } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
 	import { putFeatures } from '$lib/api/putFeatures';
@@ -17,6 +15,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Label } from '$lib/components/ui/label';
 	import { toast } from 'svelte-sonner';
+	import { addCircleBackground } from '$lib/utils.js';
 	import { calcDistance } from '$lib/utils.js';
 	let { data, form } = $props();
 	$effect(() => {
@@ -140,6 +139,48 @@
 
 			map.on('load', () => {
 				if (!map) return;
+				const svgs = [
+					{
+						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-right"><path d="M22 18a2 2 0 0 1-2 2H3c-1.1 0-1.3-.6-.4-1.3L20.4 4.3c.9-.7 1.6-.4 1.6.7Z"/></svg>',
+						id: 'icon-ramp'
+					},
+					{
+						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-door-open"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>',
+						id: 'icon-entrance'
+					},
+					{
+						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-construction"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg>',
+						id: 'icon-roadblock'
+					},
+					{
+						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-from-dot"><path d="m5 9 7-7 7 7"/><path d="M12 16V2"/><circle cx="12" cy="21" r="1"/></svg>',
+						id: 'icon-elevator'
+					},
+					{
+						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-redo-dot"><circle cx="12" cy="17" r="1"/><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>',
+						id: 'icon-stairs'
+					}
+				];
+
+				svgs.forEach((svg) => {
+					const svgImage = new Image();
+					svgImage.onload = () => {
+						const canvas = document.createElement('canvas');
+						canvas.width = svgImage.width;
+						canvas.height = svgImage.height;
+						const ctx = canvas.getContext('2d');
+						ctx!.drawImage(svgImage, 0, 0);
+						const imageData = ctx!.getImageData(0, 0, svgImage.width, svgImage.height);
+
+						map!.addImage(svg.id, {
+							width: svgImage.width,
+							height: svgImage.height,
+							data: imageData.data
+						});
+					};
+					svgImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.svg);
+				});
+
 				map.addSource('features', {
 					type: 'geojson',
 					data: {
@@ -148,16 +189,38 @@
 					}
 				});
 
-				// Add a layer to display the features as circles
+				// Add a layer for the background circles
 				map.addLayer({
-					id: 'feature-layer',
+					id: 'background-circle-layer',
 					type: 'circle',
 					source: 'features',
 					paint: {
-						'circle-radius': 6,
-						'circle-color': '#FF0000'
+						'circle-radius': 16,
+						'circle-color': [
+							'match',
+							['get', 'accessLevel'],
+							1,
+							'green',
+							0,
+							'yellow',
+							-1,
+							'red',
+							'white'
+						]
 					}
 				});
+
+				// Add a layer to display the features as symbols
+				map.addLayer({
+					id: 'feature-layer',
+					type: 'symbol',
+					source: 'features',
+					layout: {
+						'icon-image': ['concat', 'icon-', ['get', 'type']],
+						'icon-allow-overlap': true
+					}
+				});
+
 				map.addControl(
 					new mapboxgl.GeolocateControl({
 						positionOptions: {
