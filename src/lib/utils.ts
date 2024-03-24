@@ -14,6 +14,10 @@ type FlyAndScaleParams = {
     duration?: number;
 };
 
+export function calcDistance(s:[number, number], d:[number, number]){
+    return Math.sqrt( (s[0] - d[0]) ** 2 + (s[1] - d[1]) ** 2 );
+}
+
 export const flyAndScale = (
     node: Element,
     params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
@@ -59,4 +63,5 @@ export const flyAndScale = (
         },
         easing: cubicOut
     };
+
 };
