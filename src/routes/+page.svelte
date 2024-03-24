@@ -6,12 +6,28 @@
 	import { Navigation } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import type { GeoJSON } from '$lib/types';
+	import type { MapMouseEvent, MapboxEvent } from 'mapbox-gl';
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
+
+	let points: mapboxgl.LngLat[] = $state([]);
+	let isDragging = $state(false);
+	let draggedPointId: number | null = $state(null);
+
+	const addNewMarker = (event: MapMouseEvent) => {
+		if (!map) return;
+		const marker = new mapboxgl.Marker({
+			draggable: true // Make the marker draggable
+		})
+			.setLngLat(event.lngLat) // Set the marker's longitude and latitude
+			.addTo(map);
+		console.log(marker);
+		console.log('added');
+	};
+
 	$effect(() => {
 		// need to use untrack for some reason or effect triggers
 		untrack(() => {
@@ -21,6 +37,7 @@
 				center: [-78.5079772, 38.0335529],
 				zoom: 15
 			});
+
 			const location = navigator.geolocation.getCurrentPosition((position) => {
 				map?.setCenter([position.coords.longitude, position.coords.latitude]);
 			});
@@ -36,6 +53,9 @@
 					showUserHeading: true
 				})
 			);
+			map.on('click', (event: MapMouseEvent) => {
+				addNewMarker(event);
+			});
 		});
 	});
 
