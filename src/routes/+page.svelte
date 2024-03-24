@@ -118,17 +118,43 @@
 				map?.setCenter([position.coords.longitude, position.coords.latitude]);
 			});
 
-			map.addControl(
-				new mapboxgl.GeolocateControl({
-					positionOptions: {
-						enableHighAccuracy: true
-					},
-					// When active the map will receive updates to the device's location as it changes.
-					trackUserLocation: true,
-					// Draw an arrow next to the location dot to indicate which direction the device is heading.
-					showUserHeading: true
-				})
-			);
+			map.on('load', () => {
+				if (!map) return;
+				map.addSource('features', {
+					type: 'geojson',
+					data: {
+						type: 'FeatureCollection',
+						features: data.features
+					}
+				});
+
+				// Add a layer to display the features as circles
+				map.addLayer({
+					id: 'feature-layer',
+					type: 'circle',
+					source: 'features',
+					paint: {
+						'circle-radius': 6,
+						'circle-color': '#FF0000'
+					}
+				});
+				if (map.getLayer('feature-layer')) {
+					console.log('Layer added successfully');
+				} else {
+					console.error('Error adding layer');
+				}
+				map.addControl(
+					new mapboxgl.GeolocateControl({
+						positionOptions: {
+							enableHighAccuracy: true
+						},
+						// When active the map will receive updates to the device's location as it changes.
+						trackUserLocation: true,
+						// Draw an arrow next to the location dot to indicate which direction the device is heading.
+						showUserHeading: true
+					})
+				);
+			});
 
 			map.on('click', (event: MapMouseEvent) => {
 				addNewMarker(event);

@@ -12,7 +12,7 @@ export const load: PageServerLoad = (async () => {
         const res = await request.body;
         console.log(res)
         return {
-            features: res
+            features: res.features
         };
     } catch (error) {
         console.log(error);
