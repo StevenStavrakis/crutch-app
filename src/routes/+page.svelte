@@ -6,43 +6,46 @@
 	import { Navigation, Type } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import { putFeatures } from '$lib/api/putFeatures';
-	import { FeatureType } from '$lib/types';
 	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
 	import { Separator } from '$lib/components/ui/separator';
-  let { data } = $props();
+	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Card from '$lib/components/ui/card';
+	import { Label } from '$lib/components/ui/label';
+	import { toast } from 'svelte-sonner';
+	let { data, form } = $props();
+	$effect(() => {
+		if (!form) return;
+		if (form?.status === 200) {
+			toast.success('Feature uploaded successfully');
+		} else {
+			toast.error(`There was an error uploading the feature: ${form?.message}`);
+		}
+	});
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
-	const point:[number, number] = [-78.5294792, 38.0404501];
-
-	let submitFeatures = (coord:[number, number], type:FeatureType) => {
-		if (type === FeatureType.ENTRACE) {
-			putFeatures("Point", coord, type, 1)
-		} else if (type === FeatureType.ROADBLOCK || type === FeatureType.STAIRS) {
-			putFeatures("Point", coord, type, -1)
-		}
-	}
-
+	const point: [number, number] = [-78.5294792, 38.0404501];
 	let open = $state(false);
 
 	let isMobile = $state(false);
+	let currentPosition: mapboxgl.LngLat | undefined = $state();
 
 	let isDragging = $state(false);
-	let draggedPointId: number | null = $state(null);
 	let startMarker: mapboxgl.Marker | null = $state(null);
 	let endMarker: mapboxgl.Marker | null = $state(null);
 	let selectedMarker: 0 | 1 = $state(0);
 	let selectedMarkerRef = $derived.by(() => {
 		if (selectedMarker === 0) {
 			return startMarker;
-		} else {
+		} else if (selectedMarker === 1) {
 			return endMarker;
+		} else {
+			return null;
 		}
 	});
 
@@ -107,6 +110,11 @@
 			});
 
 			const location = navigator.geolocation.getCurrentPosition((position) => {
+				const coord: mapboxgl.LngLat = new mapboxgl.LngLat(
+					position.coords.longitude,
+					position.coords.latitude
+				);
+				currentPosition = coord;
 				map?.setCenter([position.coords.longitude, position.coords.latitude]);
 			});
 
@@ -124,6 +132,15 @@
 
 			map.on('click', (event: MapMouseEvent) => {
 				addNewMarker(event);
+			});
+			map.on('movestart', (event) => {
+				navigator.geolocation.getCurrentPosition((position) => {
+					const coord: mapboxgl.LngLat = new mapboxgl.LngLat(
+						position.coords.longitude,
+						position.coords.latitude
+					);
+					currentPosition = coord;
+				});
 			});
 		});
 	});
@@ -169,7 +186,10 @@
 		}
 	};
 
-	$inspect(isMobile);
+	let submitButtonDisabled = $derived.by(() => {
+		if (selectedMarkerRef === null) return true;
+		return false;
+	});
 </script>
 
 <svelte:window onresize={resize} />
@@ -180,10 +200,59 @@
 >
 	<Resizable.Pane defaultSize={25}>
 		<div class="h-full w-full p-4">
-			<Button onclick={() => (open = true)}>open thing</Button>
 			<h1 class="text-4xl font-bold">Crutch</h1>
-
-			<Button onclick={() => submitFeatures(point, FeatureType.ENTRACE)}>Example of how submitFeatures work</Button>
+			<Tabs.Root value="navigate" class="w-[400px]">
+				<Tabs.List class="grid w-full grid-cols-2">
+					<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
+					<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
+				</Tabs.List>
+				<Tabs.Content value="navigate">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>Account</Card.Title>
+							<Card.Description>
+								Make changes to your account here. Click save when you're done.
+							</Card.Description>
+						</Card.Header>
+						<Card.Content class="space-y-2">
+							<div class="space-y-1">
+								<Label for="name">Name</Label>
+								<Input id="name" value="Pedro Duarte" />
+							</div>
+							<div class="space-y-1">
+								<Label for="username">Username</Label>
+								<Input id="username" value="@peduarte" />
+							</div>
+						</Card.Content>
+						<Card.Footer>
+							<Button>Save changes</Button>
+						</Card.Footer>
+					</Card.Root>
+				</Tabs.Content>
+				<Tabs.Content value="upload">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>Upload</Card.Title>
+							<Card.Description>
+								Upload a new feature to the map. Click open to start.
+							</Card.Description>
+						</Card.Header>
+						<Card.Content class="space-y-2">
+							<p>Possible content here. Maybe the form?</p>
+						</Card.Content>
+						<Card.Footer>
+							<Button
+								disabled={submitButtonDisabled}
+								onclick={() => {
+									if (selectedMarkerRef !== null) {
+										open = true;
+									}
+								}}>Upload Feature</Button
+							>
+						</Card.Footer>
+					</Card.Root>
+				</Tabs.Content>
+			</Tabs.Root>
 
 			<div class="flex gap-4">
 				<form method="POST" action="?/search">
@@ -213,7 +282,7 @@
 				<Dialog.Title>Upload Feature</Dialog.Title>
 			</Dialog.Header>
 			<Separator />
-			<FeatureInputForm />
+			<FeatureInputForm coords={selectedMarkerRef!.getLngLat()} />
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
@@ -221,8 +290,10 @@
 		<Drawer.Trigger asChild let:builder>
 			<Button variant="outline" builders={[builder]}>Edit Profile</Button>
 		</Drawer.Trigger>
-		<Drawer.Content>
-			<FeatureInputForm />
+		<Drawer.Content class="h-[80vh] px-8">
+			<div class="pt-12">
+				<FeatureInputForm coords={selectedMarkerRef!.getLngLat()} />
+			</div>
 		</Drawer.Content>
 	</Drawer.Root>
 {/if}

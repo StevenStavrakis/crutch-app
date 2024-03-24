@@ -26,9 +26,15 @@ dependencies:
   mapbox-gl:
     specifier: ^3.2.0
     version: 3.2.0
+  mode-watcher:
+    specifier: ^0.3.0
+    version: 0.3.0(svelte@5.0.0-next.82)
   paneforge:
     specifier: ^0.0.2
     version: 0.0.2(svelte@5.0.0-next.82)
+  svelte-sonner:
+    specifier: ^0.3.19
+    version: 0.3.19(svelte@5.0.0-next.82)
   tailwind-merge:
     specifier: ^2.2.2
     version: 2.2.2
@@ -3271,6 +3277,14 @@ packages:
       minimist: 1.2.8
     dev: true
 
+  /mode-watcher@0.3.0(svelte@5.0.0-next.82):
+    resolution: {integrity: sha512-k8jjuTx94HaaRKWO6JDf8wL761hFatrTIHJKl+E+3JWcnv+GnMBH062zcLsy0lbCI3n7RZxxHaWi66auFnUO4g==}
+    peerDependencies:
+      svelte: ^4.0.0
+    dependencies:
+      svelte: 5.0.0-next.82
+    dev: false
+
   /mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -4173,6 +4187,14 @@ packages:
       svelte: 5.0.0-next.82
       typescript: 5.4.3
     dev: true
+
+  /svelte-sonner@0.3.19(svelte@5.0.0-next.82):
+    resolution: {integrity: sha512-jpPOgLtHwRaB6Vqo2dUQMv15/yUV/BQWTjKpEqQ11uqRSHKjAYUKZyGrHB2cQsGmyjR0JUzBD58btpgNqINQ/Q==}
+    peerDependencies:
+      svelte: '>=3 <5'
+    dependencies:
+      svelte: 5.0.0-next.82
+    dev: false
 
   /svelte@5.0.0-next.82:
     resolution: {integrity: sha512-iP2O+As6oM6X21zhaY6wbYGPEEmoubP2i7dhuU85ih1ZJYpyk67cE4SYzTm+X/NqW3dVc36jo/Zf0BOxPXVnfA==}
