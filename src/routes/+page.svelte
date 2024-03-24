@@ -3,9 +3,11 @@
 	import * as Resizable from '$lib/components/ui/resizable';
 	import { untrack } from 'svelte';
 	import { Input } from '$lib/components/ui/input';
-	import { Navigation } from 'lucide-svelte';
+	import { Navigation, Type } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
+	import { putFeatures } from '$lib/api/putFeatures';
+	import { FeatureType } from '$lib/types';
 	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { Label } from '$lib/components/ui/label';
@@ -13,11 +15,21 @@
 	import { is } from 'drizzle-orm';
 	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
 	import { Separator } from '$lib/components/ui/separator';
+  let { data } = $props();
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
+	const point:[number, number] = [-78.5294792, 38.0404501];
+
+	let submitFeatures = (coord:[number, number], type:FeatureType) => {
+		if (type === FeatureType.AccesibleEnt) {
+			putFeatures("Point", coord, type, 1)
+		} else if (type === FeatureType.Roadblock || type === FeatureType.Stairs) {
+			putFeatures("Point", coord, type, -1)
+		}
+	}
 
 	let open = $state(false);
 
@@ -86,7 +98,6 @@
 			recalculateRoute();
 		});
 	};
-
 	$effect(() => {
 		// need to use untrack for some reason or effect triggers
 		untrack(() => {
@@ -173,6 +184,9 @@
 		<div class="h-full w-full p-4">
 			<Button onclick={() => (open = true)}>open thing</Button>
 			<h1 class="text-4xl font-bold">Crutch</h1>
+
+			<Button onclick={() => submitFeatures(point, FeatureType.AccesibleEnt)}>Example of how submitFeatures work</Button>
+
 			<div class="flex gap-4">
 				<form method="POST" action="?/search">
 					<Input type="text" name="q" placeholder="Search locations" />
