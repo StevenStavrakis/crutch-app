@@ -7,11 +7,21 @@
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
 	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
+	import * as Drawer from '$lib/components/ui/drawer';
+	import { Label } from '$lib/components/ui/label';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { is } from 'drizzle-orm';
+	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
+	import { Separator } from '$lib/components/ui/separator';
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
+
+	let open = $state(false);
+
+	let isMobile = $state(false);
 
 	let isDragging = $state(false);
 	let draggedPointId: number | null = $state(null);
@@ -140,7 +150,20 @@
 			directions = null;
 		});
 	});
+
+	// function that runs on resize
+	const resize = () => {
+		if (window.innerWidth < 768) {
+			isMobile = true;
+		} else {
+			isMobile = false;
+		}
+	};
+
+	$inspect(isMobile);
 </script>
+
+<svelte:window onresize={resize} />
 
 <Resizable.PaneGroup
 	direction="horizontal"
@@ -148,6 +171,7 @@
 >
 	<Resizable.Pane defaultSize={25}>
 		<div class="h-full w-full p-4">
+			<Button onclick={() => (open = true)}>open thing</Button>
 			<h1 class="text-4xl font-bold">Crutch</h1>
 			<div class="flex gap-4">
 				<form method="POST" action="?/search">
@@ -157,9 +181,6 @@
 					<Navigation size={18} />
 				</Button>
 			</div>
-			<Button onclick={() => getDirections(fromCoords, toCoords).then((res) => (directions = res))}
-				>Test directions</Button
-			>
 		</div>
 	</Resizable.Pane>
 	<Resizable.Handle />
@@ -169,3 +190,27 @@
 		</div>
 	</Resizable.Pane>
 </Resizable.PaneGroup>
+
+{#if !isMobile}
+	<Dialog.Root bind:open>
+		<Dialog.Trigger asChild let:builder>
+			<Button variant="outline" builders={[builder]}>Edit Profile</Button>
+		</Dialog.Trigger>
+		<Dialog.Content class="sm:max-w-[425px]">
+			<Dialog.Header>
+				<Dialog.Title>Upload Feature</Dialog.Title>
+			</Dialog.Header>
+			<Separator />
+			<FeatureInputForm />
+		</Dialog.Content>
+	</Dialog.Root>
+{:else}
+	<Drawer.Root bind:open>
+		<Drawer.Trigger asChild let:builder>
+			<Button variant="outline" builders={[builder]}>Edit Profile</Button>
+		</Drawer.Trigger>
+		<Drawer.Content>
+			<FeatureInputForm />
+		</Drawer.Content>
+	</Drawer.Root>
+{/if}
