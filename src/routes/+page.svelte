@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
 	import type { GeoJSON } from '$lib/types';
+	import { putFeatures } from '$lib/api/putFeatures';
 
 	let { data } = $props();
 
@@ -16,6 +17,7 @@
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
+	const point:[number, number] = [-78.5294792, 38.0404501];
 	$effect(() => {
 		// need to use untrack for some reason or effect triggers
 		untrack(() => {
@@ -85,6 +87,7 @@
 	<Resizable.Pane defaultSize={25}>
 		<div class="h-full w-full p-4">
 			<h1 class="text-4xl font-bold">Crutch</h1>
+			<Button onclick={() => putFeatures("Point", point, AccesibleEnt, 1)}>Upload point </Button>
 			<div class="flex gap-4">
 				<form method="POST" action="?/search">
 					<Input type="text" name="q" placeholder="Search locations" />
