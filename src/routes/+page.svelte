@@ -4,7 +4,9 @@
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
+	import { putFeatures } from '$lib/api/putFeatures';
+	import { FeatureType } from '$lib/types';
+	import type { GeoJSONSource, LngLat, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
@@ -14,6 +16,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { toast } from 'svelte-sonner';
 	import { addCircleBackground } from '$lib/utils.js';
+	import { calcDistance } from '$lib/utils.js';
 	let { data, form } = $props();
 	$effect(() => {
 		if (!form) return;
@@ -29,6 +32,7 @@
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
 	const point: [number, number] = [-78.5294792, 38.0404501];
+	const maxDistanceToClip = 0.00035;
 	let open = $state(false);
 
 	let isMobile = $state(false);
@@ -50,6 +54,7 @@
 
 	const recalculateRoute = () => {
 		if (!startMarker || !endMarker) return;
+		if (startMarker.getLngLat() == endMarker.getLngLat()) return;
 		const start = startMarker.getLngLat();
 		const end = endMarker.getLngLat();
 		getDirections(`${start.lng},${start.lat}`, `${end.lng},${end.lat}`).then(
@@ -61,16 +66,16 @@
 		if (!map || map === undefined) return;
 		if (startMarker && endMarker) {
 			// careful
-			selectedMarkerRef!.setLngLat(event.lngLat);
+			selectedMarkerRef!.setLngLat(compareAndSetPoint(event.lngLat));
 			recalculateRoute();
 			return;
 		}
 		const marker = new mapboxgl.Marker({
 			draggable: true // Make the marker draggable
-		}).setLngLat(event.lngLat); // Set the marker's longitude and latitude
+		}).setLngLat(compareAndSetPoint(event.lngLat)); // Set the marker's longitude and latitude
 
 		if (!startMarker) {
-			startMarker = marker;
+			startMarker = marker.setLngLat(compareAndSetPoint(event.lngLat));
 			selectedMarker = 0;
 			marker.getElement().addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -79,7 +84,7 @@
 				selectedMarker = 0;
 			});
 		} else {
-			endMarker = marker;
+			endMarker = marker.setLngLat(compareAndSetPoint(event.lngLat));
 			selectedMarker = 1;
 			marker.getElement().addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -90,11 +95,26 @@
 			recalculateRoute();
 		}
 		marker.addTo(map);
+
+		let lastLngLatBeforeDrag: mapboxgl.LngLatLike;
+		
 		marker.on('dragstart', (e) => {
-			isDragging = true;
+			isDragging = true; 
+			lastLngLatBeforeDrag = marker.getLngLat();
 		});
+
 		marker.on('dragend', () => {
 			isDragging = false;
+			if (selectedMarker === 0 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(endMarker!.getLngLat())){
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
+			} else {
+				marker.setLngLat(lastLngLatBeforeDrag);
+			};
+			if (selectedMarker === 1 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(startMarker!.getLngLat())){
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
+			} else {
+				marker.setLngLat(lastLngLatBeforeDrag);
+			};
 			recalculateRoute();
 		});
 	};
@@ -259,6 +279,33 @@
 			directions = null;
 		});
 	});
+
+	const calculateClosestDoor = (myPos: LngLat) => {
+		let minDist = 1000;
+		let coord = [0, 0];
+
+		for (const {id, geometry, properties} of data.features) {
+			let { type, accessLevel } = properties;
+			if (type === "entrance" && accessLevel === 1) {
+				let { coordinates } = geometry;
+				let currDist = calcDistance(coordinates, [myPos.lng, myPos.lat]);
+				if (currDist < minDist) {
+					minDist = currDist
+					coord = coordinates
+				}
+			}
+		}
+		return coord;
+	}
+
+	const compareAndSetPoint = (myPos:LngLat) => {
+		const closestDoor = calculateClosestDoor(myPos);
+		if (calcDistance([closestDoor[0], closestDoor[1]], [myPos.lng, myPos.lat]) > maxDistanceToClip) {
+				return (myPos)
+		} else {
+				return (new mapboxgl.LngLat(closestDoor[0], closestDoor[1]));
+		}
+	}
 
 	// function that runs on resize
 	const resize = () => {

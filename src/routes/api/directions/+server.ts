@@ -13,7 +13,8 @@ export const POST: RequestHandler = async (event) => {
             waypoints: [
                 { coordinates: from.split(',').map(Number) },
                 { coordinates: to.split(',').map(Number) }
-            ]
+            ],
+            annotations: ["distance", "duration"]
         }).send();
         return json(response.body);
     } catch (error) {
