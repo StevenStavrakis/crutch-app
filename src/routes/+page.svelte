@@ -8,18 +8,20 @@
 	import { getDirections } from '$lib/api/getDirections';
 	import { putFeatures } from '$lib/api/putFeatures';
 	import { FeatureType } from '$lib/types';
-	import type { GeoJSONSource, MapMouseEvent } from 'mapbox-gl';
+	import type { GeoJSONSource, LngLat, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FeatureInputForm from '$lib/components/FeatureInputForm.svelte';
 	import { Separator } from '$lib/components/ui/separator';
-  let { data } = $props();
-
+	import { calcDistance } from '$lib/utils.js';
+  	let { data } = $props();
+	let features = data.features.features; //all features (door, roadblock, etc)
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
 	const fromCoords = '-78.5294792,38.0404501';
 	const toCoords = '-78.5065194,38.0340111';
 	const point:[number, number] = [-78.5294792, 38.0404501];
+	const maxDistanceToClip = 0.00035;
 
 	let submitFeatures = (coord:[number, number], type:FeatureType) => {
 		if (type === FeatureType.ENTRACE) {
@@ -48,6 +50,7 @@
 
 	const recalculateRoute = () => {
 		if (!startMarker || !endMarker) return;
+		if (startMarker.getLngLat() == endMarker.getLngLat()) return;
 		const start = startMarker.getLngLat();
 		const end = endMarker.getLngLat();
 		getDirections(`${start.lng},${start.lat}`, `${end.lng},${end.lat}`).then(
@@ -59,16 +62,16 @@
 		if (!map || map === undefined) return;
 		if (startMarker && endMarker) {
 			// careful
-			selectedMarkerRef!.setLngLat(event.lngLat);
+			selectedMarkerRef!.setLngLat(compareAndSetPoint(event.lngLat));
 			recalculateRoute();
 			return;
 		}
 		const marker = new mapboxgl.Marker({
 			draggable: true // Make the marker draggable
-		}).setLngLat(event.lngLat); // Set the marker's longitude and latitude
+		}).setLngLat(compareAndSetPoint(event.lngLat)); // Set the marker's longitude and latitude
 
 		if (!startMarker) {
-			startMarker = marker;
+			startMarker = marker.setLngLat(compareAndSetPoint(event.lngLat));
 			selectedMarker = 0;
 			marker.getElement().addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -77,7 +80,7 @@
 				selectedMarker = 0;
 			});
 		} else {
-			endMarker = marker;
+			endMarker = marker.setLngLat(compareAndSetPoint(event.lngLat));
 			selectedMarker = 1;
 			marker.getElement().addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -93,7 +96,14 @@
 		});
 		marker.on('dragend', () => {
 			isDragging = false;
-			recalculateRoute();
+			if (selectedMarker === 0 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(endMarker!.getLngLat())){
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
+				recalculateRoute();
+			};
+			if (selectedMarker === 1 && compareAndSetPoint(marker.getLngLat()) !== compareAndSetPoint(startMarker!.getLngLat())){
+				marker.setLngLat(compareAndSetPoint(marker.getLngLat()));
+				recalculateRoute();
+			};
 		});
 	};
 	$effect(() => {
@@ -159,6 +169,34 @@
 			directions = null;
 		});
 	});
+
+	const calculateClosestDoor = (myPos: LngLat) => {
+		let minDist = 1000;
+		let coord = [0, 0];
+
+		for (const {geometry, properties} of features) {
+			let { type, value } = properties;
+			if (type === "entrance" && value === 1) {
+				let { coordinates } = geometry;
+				let currDist = calcDistance(coordinates, [myPos.lng, myPos.lat]);
+				if (currDist < minDist) {
+					currDist = minDist
+					coord = coordinates
+				}
+			}
+		}
+
+		return coord;
+	}
+
+	const compareAndSetPoint = (myPos:LngLat) => {
+		const closestDoor = calculateClosestDoor(myPos);
+		if (calcDistance([closestDoor[0], closestDoor[1]], [myPos.lng, myPos.lat]) > maxDistanceToClip) {
+				return (myPos)
+		} else {
+				return (new mapboxgl.LngLat(closestDoor[0], closestDoor[1]));
+		}
+	}
 
 	// function that runs on resize
 	const resize = () => {
