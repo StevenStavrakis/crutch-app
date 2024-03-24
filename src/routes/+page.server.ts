@@ -13,6 +13,3 @@ export const load: PageServerLoad = (async () => {
     }
 
 }) satisfies PageServerLoad;
-
-
-
