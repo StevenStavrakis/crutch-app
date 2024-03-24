@@ -8,9 +8,9 @@
 	import { getDirections } from '$lib/api/getDirections';
 	import type { GeoJSON } from '$lib/types';
 
-	let { features } = $props();
+	let { data } = $props();
 
-	$inspect(features);
+	$inspect(data.features);
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
