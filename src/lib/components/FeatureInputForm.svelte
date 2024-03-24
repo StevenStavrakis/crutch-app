@@ -8,10 +8,11 @@
 	import type { Selected } from 'bits-ui';
 	import type mapboxgl from 'mapbox-gl';
 	import { page } from '$app/stores';
-	import { ConsoleLogWriter } from 'drizzle-orm';
+	import { toast } from 'svelte-sonner';
 
 	let { coords, closeForm }: { coords: mapboxgl.LngLat; closeForm: () => void } = $props();
-    $inspect(coords);
+	console.log('Form mounted');
+	console.log('Coords: ', coords);
 	const featureTypeEnum = Object.entries(FeatureType);
 
 	let featureType: undefined | Selected<FeatureType> = $state();
@@ -23,22 +24,23 @@
 		return !featureType || (showBoolean && isAccessible === undefined);
 	});
 
-	$effect(() => {
-		if ($page.form) {
-			if ($page.form.status === 200) {
-                closeForm();
-				console.log('Feature uploaded successfully');
-			} else {
-				console.log(`There was an error uploading the feature: ${$page.form.message}`);
-			}
-		}
-	});
 </script>
 
 <form
 	method="post"
 	action="?/submitFeature"
-	use:enhance
+	use:enhance={() => {
+		return async ({ result, update }) => {
+			if (result.status === 200) {
+				toast.success('Feature successfully uploaded for review');
+				closeForm()
+			} else {
+				toast.error('There was an error uploading the feature');
+			}			// `result` is an `ActionResult` object
+			// `update` is a function which triggers the default logic that would be triggered if this callback wasn't set
+			update();
+		};
+	}}
 >
 	<div class="flex flex-col gap-6">
 		<div>

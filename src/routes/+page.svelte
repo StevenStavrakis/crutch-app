@@ -4,8 +4,6 @@
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { getDirections } from '$lib/api/getDirections';
-	import { putFeatures } from '$lib/api/putFeatures';
-	import { FeatureType } from '$lib/types';
 	import type { GeoJSONSource, LngLat, MapMouseEvent } from 'mapbox-gl';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -13,25 +11,18 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Card from '$lib/components/ui/card';
-	import { Label } from '$lib/components/ui/label';
 	import { toast } from 'svelte-sonner';
-	import { addCircleBackground } from '$lib/utils.js';
 	import { calcDistance } from '$lib/utils.js';
+	import { Menu } from 'lucide-svelte';
 	let { data, form } = $props();
 	$effect(() => {
-		if (!form) return;
-		if (form?.status === 200) {
-			toast.success('Feature uploaded successfully');
-		} else {
-			toast.error(`There was an error uploading the feature: ${form?.message}`);
-		}
+		untrack(() => {
+			resize();
+		});
 	});
 
 	let map: mapboxgl.Map | undefined = $state();
 	let directions: null | GeoJSON.Feature = $state(null);
-	const fromCoords = '-78.5294792,38.0404501';
-	const toCoords = '-78.5065194,38.0340111';
-	const point: [number, number] = [-78.5294792, 38.0404501];
 	const maxDistanceToClip = 0.00035;
 	let open = $state(false);
 
@@ -63,6 +54,37 @@
 	};
 
 	const addNewMarker = (event: MapMouseEvent) => {
+		console.log(isMobile, modeSetting);
+		if (isMobile && modeSetting === 'upload') {
+			if (endMarker) {
+				endMarker.remove();
+				endMarker = null;
+			}
+			startMarker?.remove();
+			startMarker = new mapboxgl.Marker().setLngLat(event.lngLat);
+			startMarker.addTo(map);
+			selectedMarker = 0;
+			currentCoordsSet = event.lngLat;
+			console.log(selectedMarkerRef);
+			open = true;
+			return;
+		}
+		if (isMobile && modeSetting === 'navigate') {
+			console.log('isMobile add marker');
+			// set start marker to current user geo location
+
+			startMarker = new mapboxgl.Marker().setLngLat(currentPosition);
+			if (!endMarker) {
+				console.log('make end marker');
+				selectedMarker = 1;
+				endMarker = new mapboxgl.Marker().setLngLat(compareAndSetPoint(event.lngLat));
+				endMarker.addTo(map);
+			} else {
+				endMarker.setLngLat(compareAndSetPoint(event.lngLat));
+			}
+			recalculateRoute();
+			return;
+		}
 		if (!map || map === undefined) return;
 		if (startMarker && endMarker) {
 			// careful
@@ -97,9 +119,9 @@
 		marker.addTo(map);
 
 		let lastLngLatBeforeDrag: mapboxgl.LngLatLike;
-		
+
 		marker.on('dragstart', (e) => {
-			isDragging = true; 
+			isDragging = true;
 			lastLngLatBeforeDrag = marker.getLngLat();
 		});
 
@@ -121,108 +143,104 @@
 	$effect(() => {
 		// need to use untrack for some reason or effect triggers
 		untrack(() => {
-			map = new mapboxgl.Map({
-				container: 'map',
-				style: 'mapbox://styles/mapbox/dark-v11',
-				center: [-78.5079772, 38.0335529],
-				zoom: 15
-			});
-
 			const location = navigator.geolocation.getCurrentPosition((position) => {
 				const coord: mapboxgl.LngLat = new mapboxgl.LngLat(
 					position.coords.longitude,
 					position.coords.latitude
 				);
 				currentPosition = coord;
-				map?.setCenter([position.coords.longitude, position.coords.latitude]);
-			});
-
-			map.on('load', () => {
-				if (!map) return;
-				const svgs = [
-					{
-						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-right"><path d="M22 18a2 2 0 0 1-2 2H3c-1.1 0-1.3-.6-.4-1.3L20.4 4.3c.9-.7 1.6-.4 1.6.7Z"/></svg>',
-						id: 'icon-ramp'
-					},
-					{
-						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-door-open"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>',
-						id: 'icon-entrance'
-					},
-					{
-						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-construction"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg>',
-						id: 'icon-roadblock'
-					},
-					{
-						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-from-dot"><path d="m5 9 7-7 7 7"/><path d="M12 16V2"/><circle cx="12" cy="21" r="1"/></svg>',
-						id: 'icon-elevator'
-					},
-					{
-						svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-redo-dot"><circle cx="12" cy="17" r="1"/><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>',
-						id: 'icon-stairs'
-					}
-				];
-
-				svgs.forEach((svg) => {
-					const svgImage = new Image();
-					svgImage.onload = () => {
-						const canvas = document.createElement('canvas');
-						canvas.width = svgImage.width;
-						canvas.height = svgImage.height;
-						const ctx = canvas.getContext('2d');
-						ctx!.drawImage(svgImage, 0, 0);
-						const imageData = ctx!.getImageData(0, 0, svgImage.width, svgImage.height);
-
-						map!.addImage(svg.id, {
-							width: svgImage.width,
-							height: svgImage.height,
-							data: imageData.data
-						});
-					};
-					svgImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.svg);
+				map = new mapboxgl.Map({
+					container: 'map',
+					style: 'mapbox://styles/mapbox/dark-v11',
+					center: [currentPosition.lng, currentPosition.lat],
+					zoom: 17
 				});
 
-				map.addSource('features', {
-					type: 'geojson',
-					data: {
-						type: 'FeatureCollection',
-						features: data.features
-					}
-				});
+				map.on('load', () => {
+					if (!map) return;
+					const svgs = [
+						{
+							svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-right"><path d="M22 18a2 2 0 0 1-2 2H3c-1.1 0-1.3-.6-.4-1.3L20.4 4.3c.9-.7 1.6-.4 1.6.7Z"/></svg>',
+							id: 'icon-ramp'
+						},
+						{
+							svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-door-open"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>',
+							id: 'icon-entrance'
+						},
+						{
+							svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-construction"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg>',
+							id: 'icon-roadblock'
+						},
+						{
+							svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-from-dot"><path d="m5 9 7-7 7 7"/><path d="M12 16V2"/><circle cx="12" cy="21" r="1"/></svg>',
+							id: 'icon-elevator'
+						},
+						{
+							svg: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-redo-dot"><circle cx="12" cy="17" r="1"/><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>',
+							id: 'icon-stairs'
+						}
+					];
 
-				// Add a layer for the background circles
-				map.addLayer({
-					id: 'background-circle-layer',
-					type: 'circle',
-					source: 'features',
-					paint: {
-						'circle-radius': 16,
-						'circle-color': [
-							'match',
-							['get', 'accessLevel'],
-							1,
-							'green',
-							0,
-							'yellow',
-							-1,
-							'red',
-							'white'
-						]
-					}
-				});
+					svgs.forEach((svg) => {
+						const svgImage = new Image();
+						svgImage.onload = () => {
+							const canvas = document.createElement('canvas');
+							canvas.width = svgImage.width;
+							canvas.height = svgImage.height;
+							const ctx = canvas.getContext('2d');
+							ctx!.drawImage(svgImage, 0, 0);
+							const imageData = ctx!.getImageData(0, 0, svgImage.width, svgImage.height);
 
-				// Add a layer to display the features as symbols
-				map.addLayer({
-					id: 'feature-layer',
-					type: 'symbol',
-					source: 'features',
-					layout: {
-						'icon-image': ['concat', 'icon-', ['get', 'type']],
-						'icon-allow-overlap': true
-					}
-				});
+							map!.addImage(svg.id, {
+								width: svgImage.width,
+								height: svgImage.height,
+								data: imageData.data
+							});
+						};
+						svgImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.svg);
+					});
 
-				map.addControl(
-					new mapboxgl.GeolocateControl({
+					map.addSource('features', {
+						type: 'geojson',
+						data: {
+							type: 'FeatureCollection',
+							features: data.features
+						}
+					});
+
+					// Add a layer for the background circles
+					map.addLayer({
+						id: 'background-circle-layer',
+						type: 'circle',
+						source: 'features',
+						paint: {
+							'circle-radius': 16,
+							'circle-color': [
+								'match',
+								['get', 'accessLevel'],
+								1,
+								'green',
+								0,
+								'yellow',
+								-1,
+								'red',
+								'white'
+							]
+						}
+					});
+
+					// Add a layer to display the features as symbols
+					map.addLayer({
+						id: 'feature-layer',
+						type: 'symbol',
+						source: 'features',
+						layout: {
+							'icon-image': ['concat', 'icon-', ['get', 'type']],
+							'icon-allow-overlap': true
+						}
+					});
+
+					const geoControl = new mapboxgl.GeolocateControl({
 						positionOptions: {
 							enableHighAccuracy: true
 						},
@@ -230,27 +248,31 @@
 						trackUserLocation: true,
 						// Draw an arrow next to the location dot to indicate which direction the device is heading.
 						showUserHeading: true
-					})
-				);
-			});
+					});
+					map.addControl(geoControl);
 
-			map.on('click', (event: MapMouseEvent) => {
-				addNewMarker(event);
-			});
-			map.on('movestart', (event) => {
-				navigator.geolocation.getCurrentPosition((position) => {
-					const coord: mapboxgl.LngLat = new mapboxgl.LngLat(
-						position.coords.longitude,
-						position.coords.latitude
-					);
-					currentPosition = coord;
+					setTimeout(() => {
+						geoControl.trigger();
+					}, 300);
+				});
+
+				map.on('click', (event: MapMouseEvent) => {
+					addNewMarker(event);
+				});
+				map.on('movestart', (event) => {
+					navigator.geolocation.getCurrentPosition((position) => {
+						const coord: mapboxgl.LngLat = new mapboxgl.LngLat(
+							position.coords.longitude,
+							position.coords.latitude
+						);
+						currentPosition = coord;
+					});
 				});
 			});
 		});
 	});
 
 	$effect(() => {
-		// something weird about how this effect is running
 		if (!map) return;
 		if (directions) {
 			if (map.getSource('route')) {
@@ -284,28 +306,32 @@
 		let minDist = 1000;
 		let coord = [0, 0];
 
-		for (const {id, geometry, properties} of data.features) {
+		for (const { id, geometry, properties } of data.features) {
 			let { type, accessLevel } = properties;
-			if (type === "entrance" && accessLevel === 1) {
+			if (type === 'entrance' && accessLevel === 1) {
 				let { coordinates } = geometry;
 				let currDist = calcDistance(coordinates, [myPos.lng, myPos.lat]);
 				if (currDist < minDist) {
-					minDist = currDist
-					coord = coordinates
+					minDist = currDist;
+					coord = coordinates;
 				}
 			}
 		}
 		return coord;
-	}
+	};
 
-	const compareAndSetPoint = (myPos:LngLat) => {
+	const compareAndSetPoint = (myPos: LngLat) => {
 		const closestDoor = calculateClosestDoor(myPos);
-		if (calcDistance([closestDoor[0], closestDoor[1]], [myPos.lng, myPos.lat]) > maxDistanceToClip) {
-				return (myPos)
+		if (
+			calcDistance([closestDoor[0], closestDoor[1]], [myPos.lng, myPos.lat]) > maxDistanceToClip
+		) {
+			toast.error('No ADA compliant entrance nearby, using selected location');
+			return myPos;
 		} else {
-				return (new mapboxgl.LngLat(closestDoor[0], closestDoor[1]));
+			toast.success('Using closest ADA compliant entrance');
+			return new mapboxgl.LngLat(closestDoor[0], closestDoor[1]);
 		}
-	}
+	};
 
 	// function that runs on resize
 	const resize = () => {
@@ -324,90 +350,164 @@
 	const closeForm = () => {
 		open = false;
 	};
+
+	let openMenu = $state(false);
+	let modeSetting = $state('navigate');
+	$effect(() => {
+		if (isMobile) {
+			if (modeSetting === 'upload') {
+				if (map?.getLayer('route')) {
+					map?.removeLayer('route');
+					map?.removeSource('route');
+				}
+				if (endMarker) {
+					endMarker.remove();
+					endMarker = null;
+				}
+				if (startMarker) {
+					startMarker.remove();
+					startMarker = null;
+				}
+				directions = null;
+			}
+		}
+	});
+	let currentLngLat = $derived.by(() => {
+		if (selectedMarkerRef !== null) {
+			return selectedMarkerRef.getLngLat();
+		}
+		return null;
+	});
+	let currentCoordsSet: null | LngLat = $state(null);
 </script>
 
 <svelte:window onresize={resize} />
 
-<Resizable.PaneGroup
-	direction="horizontal"
-	onLayoutChange={() => window.dispatchEvent(new Event('resize'))}
->
-	<Resizable.Pane defaultSize={25}>
-		<div class="h-full w-full p-4">
-			<h1 class="mb-6 text-4xl font-bold">Crutch</h1>
-			<Tabs.Root value="navigate" class="w-[400px]">
-				<Tabs.List class="grid w-full grid-cols-2">
-					<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
-					<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
-				</Tabs.List>
-				<Tabs.Content value="navigate">
-					<Card.Root>
-						<Card.Header>
-							<Card.Title>Navigate</Card.Title>
-							<Card.Description>
-								Place two markers on the map to get directions between them. Markers can be clicked
-								and dragged.
-							</Card.Description>
-						</Card.Header>
-						<Card.Content class="space-y-2">Various settings here</Card.Content>
-						<Card.Footer>Nothing here probably</Card.Footer>
-					</Card.Root>
-				</Tabs.Content>
-				<Tabs.Content value="upload">
-					<Card.Root>
-						<Card.Header>
-							<Card.Title>Upload</Card.Title>
-							<Card.Description>
-								Upload a new feature to the map. Click open to start.
-							</Card.Description>
-						</Card.Header>
-						<Card.Content class="space-y-2">
-							<p>Possible content here. Maybe the form?</p>
-						</Card.Content>
-						<Card.Footer>
-							<Button
-								disabled={submitButtonDisabled}
-								onclick={() => {
-									if (selectedMarkerRef !== null) {
-										open = true;
-									}
-								}}>Upload Feature</Button
-							>
-						</Card.Footer>
-					</Card.Root>
-				</Tabs.Content>
-			</Tabs.Root>
+<div class="flex flex-col md:flex-row">
+	<div class="hidden h-full w-fit p-4 md:block">
+		<h1 class="mb-6 hidden text-4xl font-bold md:block">Crutch</h1>
+		<Tabs.Root value="navigate" class="w-[400px]">
+			<Tabs.List class="grid w-full grid-cols-2">
+				<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
+				<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
+			</Tabs.List>
+			<Tabs.Content value="navigate">
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Navigate</Card.Title>
+						<Card.Description>
+							Place two markers on the map to get directions between them. Markers can be clicked
+							and dragged.
+						</Card.Description>
+					</Card.Header>
+				</Card.Root>
+			</Tabs.Content>
+			<Tabs.Content value="upload">
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Upload</Card.Title>
+						<Card.Description
+							>Upload a new feature to the map. Click open to start.</Card.Description
+						>
+					</Card.Header>
+					<Card.Footer>
+						<Button
+							class="w-full"
+							disabled={submitButtonDisabled}
+							onclick={() => {
+								if (selectedMarkerRef !== null) {
+									open = true;
+								}
+							}}>Upload Feature</Button
+						>
+					</Card.Footer>
+				</Card.Root>
+			</Tabs.Content>
+		</Tabs.Root>
+	</div>
+	<div class="h-screen w-full p-4">
+		<div class="h-full w-full rounded-xl" id="map"></div>
+		<div class="absolute bottom-8 rounded-lg left-8 z-40 bg-black p-3 border md:hidden">
+			<span>Mode: </span>
+			{#if modeSetting === 'navigate'}
+				<span>Navigate</span>
+			{:else}
+				<span>Upload</span>
+			{/if}
 		</div>
-	</Resizable.Pane>
-	<Resizable.Handle />
-	<Resizable.Pane defaultSize={75}>
-		<div class="h-screen w-full p-4">
-			<div class="h-full w-full rounded-xl" id="map"></div>
+		<div class="absolute bottom-8 right-8 z-40 md:hidden">
+			<Button
+				onclick={() => {
+					console.log('clicked');
+					openMenu = true;
+				}}
+				size="icon"
+			>
+				<Menu class="pointer-events-none" size={32} />
+			</Button>
+			<Dialog.Root bind:open={openMenu}>
+				<Dialog.Content>
+					<Dialog.Header>
+						<Dialog.Title>Settings</Dialog.Title>
+						<Dialog.Description>
+							Choose between navigating or uploading a new feature to the map.
+						</Dialog.Description>
+					</Dialog.Header>
+					<Tabs.Root class="w-[400px]" bind:value={modeSetting}>
+						<Tabs.List class="grid w-full grid-cols-2">
+							<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
+							<Tabs.Trigger value="upload">Upload</Tabs.Trigger>
+						</Tabs.List>
+						<Tabs.Content value="navigate">
+							<Card.Root>
+								<Card.Header>
+									<Card.Title>Navigate</Card.Title>
+									<Card.Description>
+										Tap a location on the map to get walking directions. If there is an ADA
+										compliant entrance nearby, it will be used.
+									</Card.Description>
+								</Card.Header>
+								<Card.Footer>
+									<Button onclick={() => (openMenu = false)}>Close</Button>
+								</Card.Footer>
+							</Card.Root>
+						</Tabs.Content>
+						<Tabs.Content value="upload">
+							<Card.Root>
+								<Card.Header>
+									<Card.Title>Upload</Card.Title>
+									<Card.Description
+										>Tap on the map to submit a new feature marker so that others can easily make
+										routing decisions.</Card.Description
+									>
+								</Card.Header>
+								<Card.Footer>
+									<Button onclick={() => (openMenu = false)}>Close</Button>
+								</Card.Footer>
+							</Card.Root>
+						</Tabs.Content>
+					</Tabs.Root>
+				</Dialog.Content>
+			</Dialog.Root>
 		</div>
-	</Resizable.Pane>
-</Resizable.PaneGroup>
+	</div>
+</div>
 
 {#if !isMobile}
 	<Dialog.Root bind:open>
-		<Dialog.Trigger asChild let:builder>
-			<Button variant="outline" builders={[builder]}>Edit Profile</Button>
-		</Dialog.Trigger>
 		<Dialog.Content class="sm:max-w-[425px]">
 			<Dialog.Header>
 				<Dialog.Title>Upload Feature</Dialog.Title>
 			</Dialog.Header>
 			<Separator />
-			<FeatureInputForm {closeForm} coords={selectedMarkerRef!.getLngLat()} />
+			<FeatureInputForm {closeForm} coords={currentCoordsSet} />
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
 	<Drawer.Root bind:open>
-		<Drawer.Trigger asChild let:builder>
-			<Button variant="outline" builders={[builder]}>Edit Profile</Button>
-		</Drawer.Trigger>
 		<Drawer.Content class="h-[80vh] px-8">
 			<div class="pt-12">
-				<FeatureInputForm {closeForm} coords={selectedMarkerRef!.getLngLat()} />
+				<FeatureInputForm {closeForm} coords={currentCoordsSet} />
 			</div>
 		</Drawer.Content>
 	</Drawer.Root>
