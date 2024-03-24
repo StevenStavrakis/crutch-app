@@ -138,11 +138,6 @@
 						'circle-color': '#FF0000'
 					}
 				});
-				if (map.getLayer('feature-layer')) {
-					console.log('Layer added successfully');
-				} else {
-					console.error('Error adding layer');
-				}
 				map.addControl(
 					new mapboxgl.GeolocateControl({
 						positionOptions: {
@@ -175,7 +170,6 @@
 		// something weird about how this effect is running
 		if (!map) return;
 		if (directions) {
-			console.log(directions);
 			if (map.getSource('route')) {
 				(map.getSource('route') as GeoJSONSource).setData(directions);
 			} else {
@@ -216,6 +210,10 @@
 		if (selectedMarkerRef === null) return true;
 		return false;
 	});
+
+	const closeForm = () => {
+		open = false;
+	};
 </script>
 
 <svelte:window onresize={resize} />
@@ -226,7 +224,7 @@
 >
 	<Resizable.Pane defaultSize={25}>
 		<div class="h-full w-full p-4">
-			<h1 class="text-4xl font-bold">Crutch</h1>
+			<h1 class="mb-6 text-4xl font-bold">Crutch</h1>
 			<Tabs.Root value="navigate" class="w-[400px]">
 				<Tabs.List class="grid w-full grid-cols-2">
 					<Tabs.Trigger value="navigate">Navigate</Tabs.Trigger>
@@ -235,24 +233,14 @@
 				<Tabs.Content value="navigate">
 					<Card.Root>
 						<Card.Header>
-							<Card.Title>Account</Card.Title>
+							<Card.Title>Navigate</Card.Title>
 							<Card.Description>
-								Make changes to your account here. Click save when you're done.
+								Place two markers on the map to get directions between them. Markers can be clicked
+								and dragged.
 							</Card.Description>
 						</Card.Header>
-						<Card.Content class="space-y-2">
-							<div class="space-y-1">
-								<Label for="name">Name</Label>
-								<Input id="name" value="Pedro Duarte" />
-							</div>
-							<div class="space-y-1">
-								<Label for="username">Username</Label>
-								<Input id="username" value="@peduarte" />
-							</div>
-						</Card.Content>
-						<Card.Footer>
-							<Button>Save changes</Button>
-						</Card.Footer>
+						<Card.Content class="space-y-2">Various settings here</Card.Content>
+						<Card.Footer>Nothing here probably</Card.Footer>
 					</Card.Root>
 				</Tabs.Content>
 				<Tabs.Content value="upload">
@@ -279,15 +267,6 @@
 					</Card.Root>
 				</Tabs.Content>
 			</Tabs.Root>
-
-			<div class="flex gap-4">
-				<form method="POST" action="?/search">
-					<Input type="text" name="q" placeholder="Search locations" />
-				</form>
-				<Button size="icon" variant="ghost">
-					<Navigation size={18} />
-				</Button>
-			</div>
 		</div>
 	</Resizable.Pane>
 	<Resizable.Handle />
@@ -308,7 +287,7 @@
 				<Dialog.Title>Upload Feature</Dialog.Title>
 			</Dialog.Header>
 			<Separator />
-			<FeatureInputForm coords={selectedMarkerRef!.getLngLat()} />
+			<FeatureInputForm {closeForm} coords={selectedMarkerRef!.getLngLat()} />
 		</Dialog.Content>
 	</Dialog.Root>
 {:else}
@@ -318,7 +297,7 @@
 		</Drawer.Trigger>
 		<Drawer.Content class="h-[80vh] px-8">
 			<div class="pt-12">
-				<FeatureInputForm coords={selectedMarkerRef!.getLngLat()} />
+				<FeatureInputForm {closeForm} coords={selectedMarkerRef!.getLngLat()} />
 			</div>
 		</Drawer.Content>
 	</Drawer.Root>

@@ -10,7 +10,6 @@ export const load: PageServerLoad = (async () => {
         const request = await mapClient.datasets.listFeatures({ datasetId: "clu4lsehn8u3k1tp9g91gaxie" }).send();
 
         const res = await request.body;
-        console.log(res)
         return {
             features: res.features
         };
@@ -22,17 +21,16 @@ export const load: PageServerLoad = (async () => {
 }) satisfies PageServerLoad;
 
 export const actions = {
-    submitFeature: async ({ request }) => {
+    submitFeature: async ({ request, fetch }) => {
         const formData = await request.formData();
 
         const featureType = formData.get('featureTypeValue');
         const isAccessible = formData.get('isAccessibleValue');
         const coordinates = formData.get('coordinates');
-        console.log(formData)
+        console.log(coordinates)
 
         if (!featureType || !coordinates) {
             console.error("Invalid request")
-            console.log(featureType, isAccessible, coordinates)
             if (!featureType) {
                 return fail(400, {
                     message: 'Feature type is required'
@@ -100,7 +98,7 @@ export const actions = {
                 });
             }
             try {
-                await putFeatures("Point", coordinatesValue, featureEnum, accessLevel)
+                await putFeatures("Point", coordinatesValue, featureEnum, accessLevel, fetch)
                 return {
                     status: 200,
                     body: {
@@ -116,9 +114,18 @@ export const actions = {
         } else {
 
             try {
-                await putFeatures("LineString", coordinatesValue, featureEnum, featureAccessLevelMap[(featureEnum as (FeatureType.ELEVATOR | FeatureType.RAMP | FeatureType.ROADBLOCK | FeatureType.STAIRS))])
+                const response = await putFeatures("Point", coordinatesValue, featureEnum, featureAccessLevelMap[(featureEnum as (FeatureType.ELEVATOR | FeatureType.RAMP | FeatureType.ROADBLOCK | FeatureType.STAIRS))], fetch)
+                console.log("SERVER RESPONSE")
+                console.log(response)
+                if (response?.status) {
+                    if (response?.status !== 200) {
+                        return fail(500, {
+                            message: 'Internal server error, put didnt work'
+                        });
+                    }
+                }
                 return {
-                    status: 200,
+                    status: response?.status,
                     body: {
                         message: "Feature added"
                     }

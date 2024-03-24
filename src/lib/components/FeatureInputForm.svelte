@@ -7,8 +7,11 @@
 	import { Switch } from './ui/switch';
 	import type { Selected } from 'bits-ui';
 	import type mapboxgl from 'mapbox-gl';
+	import { page } from '$app/stores';
+	import { ConsoleLogWriter } from 'drizzle-orm';
 
-	let { coords }: { coords: mapboxgl.LngLat } = $props();
+	let { coords, closeForm }: { coords: mapboxgl.LngLat; closeForm: () => void } = $props();
+    $inspect(coords);
 	const featureTypeEnum = Object.entries(FeatureType);
 
 	let featureType: undefined | Selected<FeatureType> = $state();
@@ -16,15 +19,27 @@
 		return featureType?.value === FeatureType.ENTRANCE;
 	});
 	let isAccessible = $state(false);
-	$inspect(isAccessible, featureType);
 	let submitButtonDisabled = $derived.by(() => {
 		return !featureType || (showBoolean && isAccessible === undefined);
 	});
+
+	$effect(() => {
+		if ($page.form) {
+			if ($page.form.status === 200) {
+                closeForm();
+				console.log('Feature uploaded successfully');
+			} else {
+				console.log(`There was an error uploading the feature: ${$page.form.message}`);
+			}
+		}
+	});
 </script>
 
-<form method="post" action="?/submitFeature" use:enhance onsubmit={() => {
-    console.log(isAccessible, featureType, coords);
-}} >
+<form
+	method="post"
+	action="?/submitFeature"
+	use:enhance
+>
 	<div class="flex flex-col gap-6">
 		<div>
 			<Label for="featureType">Feature Type</Label>
